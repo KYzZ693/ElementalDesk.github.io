@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตารางธาตุแบบ Interactive</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .periodic-table {
+            display: grid;
+            grid-template-columns: repeat(18, 1fr);
+            gap: 3px;
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .element {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .element:hover {
+            transform: scale(1.1);
+            z-index: 10;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            border-color: #333;
+        }
+
+        .element .atomic-number {
+            font-size: 0.7em;
+            font-weight: bold;
+            position: absolute;
+            top: 3px;
+            left: 5px;
+        }
+
+        .element .symbol {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .element .name {
+            font-size: 0.65em;
+            text-align: center;
+        }
+
+        .element .mass {
+            font-size: 0.6em;
+            position: absolute;
+            bottom: 3px;
+        }
+
+        .empty {
+            background: transparent;
+            cursor: default;
+        }
+
+        .empty:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Element Categories */
+        .alkali-metal { background: #ff6b6b; color: white; }
+        .alkaline-earth { background: #ffd93d; color: #333; }
+        .transition-metal { background: #ffb84d; color: white; }
+        .post-transition { background: #a8dadc; color: #333; }
+        .metalloid { background: #95e1d3; color: #333; }
+        .nonmetal { background: #6bcf7f; color: white; }
+        .halogen { background: #4ecdc4; color: white; }
+        .noble-gas { background: #c77dff; color: white; }
+        .lanthanide { background: #ff9ff3; color: white; }
+        .actinide { background: #ffa69e; color: white; }
+
+        /* Popup Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 600px;
+            position: relative;
+            animation: slideIn 0.3s;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 35px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .modal-symbol {
+            font-size: 4em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .modal-name {
+            font-size: 1.8em;
+            margin: 5px 0;
+        }
+
+        .modal-body {
+            display: grid;
+            gap: 15px;
+        }
+
+        .info-row {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .info-value {
+            color: #212529;
+        }
+
+        .lanthanide-actinide {
+            grid-column: 1 / -1;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 1400px) {
+            .periodic-table {
+                gap: 2px;
+                padding: 10px;
+            }
+            
+            .element .symbol {
+                font-size: 1.2em;
+            }
+            
+            .element .name {
+                font-size: 0.55em;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .periodic-table {
+                gap: 1px;
+                padding: 5px;
+            }
+            
+            .element .atomic-number {
+                font-size: 0.5em;
+            }
+            
+            .element .symbol {
+                font-size: 0.9em;
+            }
+            
+            .element .name {
+                display: none;
+            }
+            
+            .element .mass {
+                font-size: 0.45em;
+            }
+            
+            .modal-content {
+                margin: 10% 5%;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚛️ ตารางธาตุ Interactive</h1>
+            <p class="subtitle">คลิกที่ธาตุเพื่อดูข้อมูลเพิ่มเติม</p>
+        </header>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color alkali-metal"></div>
+                <span>โลหะอัลคาไล</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color alkaline-earth"></div>
+                <span>โลหะอัลคาไลน์เอิร์ธ</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color transition-metal"></div>
+                <span>โลหะทรานซิชัน</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color post-transition"></div>
+                <span>โลหะหลังทรานซิชัน</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color metalloid"></div>
+                <span>metalloid</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color nonmetal"></div>
+                <span>อโลหะ</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color halogen"></div>
+                <span>แฮโลเจน</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color noble-gas"></div>
+                <span>แก๊สเฉื่อย</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color lanthanide"></div>
+                <span>แลนทาไนด์</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color actinide"></div>
+                <span>แอกทิไนด์</span>
+            </div>
+        </div>
+
+        <div class="periodic-table" id="periodicTable"></div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-header">
+                <div class="modal-symbol" id="modalSymbol"></div>
+                <div class="modal-name" id="modalName"></div>
+                <div id="modalEnglishName" style="color: #666; font-size: 1.1em;"></div>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        const elements = [
+            {number: 1, symbol: "H", name: "ไหโดรเจน", englishName: "Hydrogen", mass: "1.008", category: "nonmetal", electron: "1s¹", melt: "-259.16°C", boil: "-252.87°C", discovery: "1766", description: "ธาตุที่เบาที่สุดและมีมากที่สุดในจักรวาล"},
+            {number: 2, symbol: "He", name: "ฮีเลียม", englishName: "Helium", mass: "4.003", category: "noble-gas", electron: "1s²", melt: "-272.2°C", boil: "-268.93°C", discovery: "1868", description: "แก๊สเฉื่อยที่เบาเป็นอันดับสอง ไม่ติดไฟ"},
+            {number: 3, symbol: "Li", name: "ลิเทียม", englishName: "Lithium", mass: "6.941", category: "alkali-metal", electron: "[He] 2s¹", melt: "180.5°C", boil: "1342°C", discovery: "1817", description: "โลหะที่เบาที่สุด ใช้ในแบตเตอรี่"},
+            {number: 4, symbol: "Be", name: "เบริลเลียม", englishName: "Beryllium", mass: "9.012", category: "alkaline-earth", electron: "[He] 2s²", melt: "1287°C", boil: "2470°C", discovery: "1798", description: "โลหะเบาและแข็งแรง"},
+            {number: 5, symbol: "B", name: "โบรอน", englishName: "Boron", mass: "10.81", category: "metalloid", electron: "[He] 2s² 2p¹", melt: "2076°C", boil: "3927°C", discovery: "1808", description: "กึ่งโลหะที่แข็งมาก"},
+            {number: 6, symbol: "C", name: "คาร์บอน", englishName: "Carbon", mass: "12.01", category: "nonmetal", electron: "[He] 2s² 2p²", melt: "3550°C", boil: "4027°C", discovery: "โบราณ", description: "พื้นฐานของสิ่งมีชีวิตทั้งหมด"},
+            {number: 7, symbol: "N", name: "ไนโตรเจน", englishName: "Nitrogen", mass: "14.01", category: "nonmetal", electron: "[He] 2s² 2p³", melt: "-210°C", boil: "-195.8°C", discovery: "1772", description: "ประกอบ 78% ของบรรยากาศโลก"},
+            {number: 8, symbol: "O", name: "ออกซิเจน", englishName: "Oxygen", mass: "16.00", category: "nonmetal", electron: "[He] 2s² 2p⁴", melt: "-218.3°C", boil: "-182.9°C", discovery: "1774", description: "จำเป็นต่อการหายใจของสิ่งมีชีวิต"},
+            {number: 9, symbol: "F", name: "ฟลูออรีน", englishName: "Fluorine", mass: "19.00", category: "halogen", electron: "[He] 2s² 2p⁵", melt: "-219.6°C", boil: "-188.1°C", discovery: "1886", description: "ธาตุที่มีความว่องไวทางเคมีสูงสุด"},
+            {number: 10, symbol: "Ne", name: "นีออน", englishName: "Neon", mass: "20.18", category: "noble-gas", electron: "[He] 2s² 2p⁶", melt: "-248.6°C", boil: "-246.1°C", discovery: "1898", description: "ใช้ในป้ายไฟนีออน"},
+            {number: 11, symbol: "Na", name: "โซเดียม", englishName: "Sodium", mass: "22.99", category: "alkali-metal", electron: "[Ne] 3s¹", melt: "97.7°C", boil: "883°C", discovery: "1807", description: "โลหะนุ่มสีเงิน ทำปฏิกิริยากับน้ำได้"},
+            {number: 12, symbol: "Mg", name: "แมกนีเซียม", englishName: "Magnesium", mass: "24.31", category: "alkaline-earth", electron: "[Ne] 3s²", melt: "650°C", boil: "1090°C", discovery: "1755", description: "โลหะเบาและแข็งแรง"},
+            {number: 13, symbol: "Al", name: "อะลูมิเนียม", englishName: "Aluminum", mass: "26.98", category: "post-transition", electron: "[Ne] 3s² 3p¹", melt: "660.3°C", boil: "2519°C", discovery: "1825", description: "โลหะเบาที่ใช้กันอย่างแพร่หลาย"},
+            {number: 14, symbol: "Si", name: "ซิลิคอน", englishName: "Silicon", mass: "28.09", category: "metalloid", electron: "[Ne] 3s² 3p²", melt: "1414°C", boil: "3265°C", discovery: "1824", description: "ใช้ในอุตสาหกรรมอิเล็กทรอนิกส์"},
+            {number: 15, symbol: "P", name: "ฟอสฟอรัส", englishName: "Phosphorus", mass: "30.97", category: "nonmetal", electron: "[Ne] 3s² 3p³", melt: "44.2°C", boil: "280.5°C", discovery: "1669", description: "จำเป็นต่อสิ่งมีชีวิต"},
+            {number: 16, symbol: "S", name: "กำมะถัน", englishName: "Sulfur", mass: "32.07", category: "nonmetal", electron: "[Ne] 3s² 3p⁴", melt: "115.2°C", boil: "444.6°C", discovery: "โบราณ", description: "ธาตุสีเหลืองที่มีกลิ่นเฉพาะ"},
+            {number: 17, symbol: "Cl", name: "คลอรีน", englishName: "Chlorine", mass: "35.45", category: "halogen", electron: "[Ne] 3s² 3p⁵", melt: "-101.5°C", boil: "-34.04°C", discovery: "1774", description: "ใช้ในการฆ่าเชื้อโรค"},
+            {number: 18, symbol: "Ar", name: "อาร์กอน", englishName: "Argon", mass: "39.95", category: "noble-gas", electron: "[Ne] 3s² 3p⁶", melt: "-189.3°C", boil: "-185.8°C", discovery: "1894", description: "แก๊สเฉื่อยที่พบมากที่สุดในบรรยากาศ"},
+            {number: 19, symbol: "K", name: "โพแทสเซียม", englishName: "Potassium", mass: "39.10", category: "alkali-metal", electron: "[Ar] 4s¹", melt: "63.5°C", boil: "759°C", discovery: "1807", description: "จำเป็นต่อการทำงานของกล้ามเนื้อ"},
+            {number: 20, symbol: "Ca", name: "แคลเซียม", englishName: "Calcium", mass: "40.08", category: "alkaline-earth", electron: "[Ar] 4s²", melt: "842°C", boil: "1484°C", discovery: "1808", description: "สำคัญต่อกระดูกและฟัน"},
+            {number: 21, symbol: "Sc", name: "สแกนเดียม", englishName: "Scandium", mass: "44.96", category: "transition-metal", electron: "[Ar] 3d¹ 4s²", melt: "1541°C", boil: "2836°C", discovery: "1879", description: "โลหะเบาและแข็งแรง"},
+            {number: 22, symbol: "Ti", name: "ไทเทเนียม", englishName: "Titanium", mass: "47.87", category: "transition-metal", electron: "[Ar] 3d² 4s²", melt: "1668°C", boil: "3287°C", discovery: "1791", description: "แข็งแรงและทนต่อการกัดกร่อน"},
+            {number: 23, symbol: "V", name: "วาเนเดียม", englishName: "Vanadium", mass: "50.94", category: "transition-metal", electron: "[Ar] 3d³ 4s²", melt: "1910°C", boil: "3407°C", discovery: "1801", description: "ใช้เสริมแรงเหล็กกล้า"},
+            {number: 24, symbol: "Cr", name: "โครเมียม", englishName: "Chromium", mass: "52.00", category: "transition-metal", electron: "[Ar] 3d⁵ 4s¹", melt: "1907°C", boil: "2671°C", discovery: "1797", description: "ใช้ชุบโลหะให้เงางาม"},
+            {number: 25, symbol: "Mn", name: "แมงกานีส", englishName: "Manganese", mass: "54.94", category: "transition-metal", electron: "[Ar] 3d⁵ 4s²", melt: "1246°C", boil: "2061°C", discovery: "1774", description: "ใช้ผลิตเหล็กกล้า"},
+            {number: 26, symbol: "Fe", name: "เหล็ก", englishName: "Iron", mass: "55.85", category: "transition-metal", electron: "[Ar] 3d⁶ 4s²", melt: "1538°C", boil: "2862°C", discovery: "โบราณ", description: "โลหะที่ใช้มากที่สุดในโลก"},
+            {number: 27, symbol: "Co", name: "โคบอลต์", englishName: "Cobalt", mass: "58.93", category: "transition-metal", electron: "[Ar] 3d⁷ 4s²", melt: "1495°C", boil: "2927°C", discovery: "1735", description: "ใช้ในแม่เหล็กและแบตเตอรี่"},
+            {number: 28, symbol: "Ni", name: "นิกเกิล", englishName: "Nickel", mass: "58.69", category: "transition-metal", electron: "[Ar] 3d⁸ 4s²", melt: "1455°C", boil: "2913°C", discovery: "1751", description: "ทนต่อการกัดกร่อน"},
+            {number: 29, symbol: "Cu", name: "ทองแดง", englishName: "Copper", mass: "63.55", category: "transition-metal", electron: "[Ar] 3d¹⁰ 4s¹", melt: "1084.6°C", boil: "2562°C", discovery: "โบราณ", description: "นำไฟฟ้าได้ดีเยี่ยม"},
+            {number: 30, symbol: "Zn", name: "สังกะสี", englishName: "Zinc", mass: "65.38", category: "transition-metal", electron: "[Ar] 3d¹⁰ 4s²", melt: "419.5°C", boil: "907°C", discovery: "โบราณ", description: "ใช้ชุบโลหะป้องกันสนิม"},
+            {number: 31, symbol: "Ga", name: "แกลเลียม", englishName: "Gallium", mass: "69.72", category: "post-transition", electron: "[Ar] 3d¹⁰ 4s² 4p¹", melt: "29.8°C", boil: "2204°C", discovery: "1875", description: "หลอมเหลวในมือ"},
+            {number: 32, symbol: "Ge", name: "เจอร์เมเนียม", englishName: "Germanium", mass: "72.63", category: "metalloid", electron: "[Ar] 3d¹⁰ 4s² 4p²", melt: "938.3°C", boil: "2833°C", discovery: "1886", description: "ใช้ในอิเล็กทรอนิกส์"},
+            {number: 33, symbol: "As", name: "สารหนู", englishName: "Arsenic", mass: "74.92", category: "metalloid", electron: "[Ar] 3d¹⁰ 4s² 4p³", melt: "817°C", boil: "614°C", discovery: "โบราณ", description: "มีพิษแต่มีประโยชน์ทางการแพทย์"},
+            {number: 34, symbol: "Se", name: "ซีลีเนียม", englishName: "Selenium", mass: "78.97", category: "nonmetal", electron: "[Ar] 3d¹⁰ 4s² 4p⁴", melt: "221°C", boil: "685°C", discovery: "1817", description: "จำเป็นต่อร่างกายในปริมาณเล็กน้อย"},
+            {number: 35, symbol: "Br", name: "โบรมีน", englishName: "Bromine", mass: "79.90", category: "halogen", electron: "[Ar] 3d¹⁰ 4s² 4p⁵", melt: "-7.2°C", boil: "58.8°C", discovery: "1826", description: "ของเหลวสีน้ำตาลแดงที่อุณหภูมิห้อง"},
+            {number: 36, symbol: "Kr", name: "คริปทอน", englishName: "Krypton", mass: "83.80", category: "noble-gas", electron: "[Ar] 3d¹⁰ 4s² 4p⁶", melt: "-157.4°C", boil: "-153.4°C", discovery: "1898", description: "ใช้ในหลอดไฟพิเศษ"},
+            {number: 37, symbol: "Rb", name: "รูบิเดียม", englishName: "Rubidium", mass: "85.47", category: "alkali-metal", electron: "[Kr] 5s¹", melt: "39.3°C", boil: "688°C", discovery: "1861", description: "โลหะนุ่มมาก ทำปฏิกิริยารุนแรงกับน้ำ"},
+            {number: 38, symbol: "Sr", name: "สตรอนเทียม", englishName: "Strontium", mass: "87.62", category: "alkaline-earth", electron: "[Kr] 5s²", melt: "777°C", boil: "1382°C", discovery: "1790", description: "ใช้ในดอกไม้ไฟสีแดง"},
+            {number: 39, symbol: "Y", name: "อิตเทรียม", englishName: "Yttrium", mass: "88.91", category: "transition-metal", electron: "[Kr] 4d¹ 5s²", melt: "1526°C", boil: "3345°C", discovery: "1794", description: "ใช้ในเลเซอร์และไฟ LED"},
+            {number: 40, symbol: "Zr", name: "เซอร์โคเนียม", englishName: "Zirconium", mass: "91.22", category: "transition-metal", electron: "[Kr] 4d² 5s²", melt: "1855°C", boil: "4409°C", discovery: "1789", description: "ทนต่อความร้อนและการกัดกร่อน"},
+            {number: 41, symbol: "Nb", name: "ไนโอเบียม", englishName: "Niobium", mass: "92.91", category: "transition-metal", electron: "[Kr] 4d⁴ 5s¹", melt: "2477°C", boil: "4744°C", discovery: "1801", description: "ใช้ในเหล็กกล้าพิเศษ"},
+            {number: 42, symbol: "Mo", name: "โมลิบดีนัม", englishName: "Molybdenum", mass: "95.95", category: "transition-metal", electron: "[Kr] 4d⁵ 5s¹", melt: "2623°C", boil: "4639°C", discovery: "1778", description: "ทนต่อความร้อนสูง"},
+            {number: 43, symbol: "Tc", name: "เทคนีเชียม", englishName: "Technetium", mass: "98", category: "transition-metal", electron: "[Kr] 4d⁵ 5s²", melt: "2157°C", boil: "4265°C", discovery: "1937", description: "ธาตุสังเคราะห์แรก"},
+            {number: 44, symbol: "Ru", name: "รูทีเนียม", englishName: "Ruthenium", mass: "101.07", category: "transition-metal", electron: "[Kr] 4d⁷ 5s¹", melt: "2334°C", boil: "4150°C", discovery: "1844", description: "โลหะหายาก ทนทาน"},
+            {number: 45, symbol: "Rh", name: "โรเดียม", englishName: "Rhodium", mass: "102.91", category: "transition-metal", electron: "[Kr] 4d⁸ 5s¹", melt: "1964°C", boil: "3695°C", discovery: "1803", description: "โลหะมีค่าใช้เป็นตัวเร่งปฏิกิริยา"},
+            {number: 46, symbol: "Pd", name: "แพลเลเดียม", englishName: "Palladium", mass: "106.42", category: "transition-metal", electron: "[Kr] 4d¹⁰", melt: "1554.9°C", boil: "2963°C", discovery: "1803", description: "ดูดซับไฮโดรเจนได้มาก"},
+            {number: 47, symbol: "Ag", name: "เงิน", englishName: "Silver", mass: "107.87", category: "transition-metal", electron: "[Kr] 4d¹⁰ 5s¹", melt: "961.8°C", boil: "2162°C", discovery: "โบราณ", description: "นำไฟฟ้าได้ดีที่สุด"},
+            {number: 48, symbol: "Cd", name: "แคดเมียม", englishName: "Cadmium", mass: "112.41", category: "transition-metal", electron: "[Kr] 4d¹⁰ 5s²", melt: "321.1°C", boil: "767°C", discovery: "1817", description: "ใช้ในแบตเตอรี่ มีพิษ"},
+            {number: 49, symbol: "In", name: "อินเดียม", englishName: "Indium", mass: "114.82", category: "post-transition", electron: "[Kr] 4d¹⁰ 5s² 5p¹", melt: "156.6°C", boil: "2072°C", discovery: "1863", description: "โลหะนุ่ม ใช้ในหน้าจอสัมผัส"},
+            {number: 50, symbol: "Sn", name: "ดีบุก", englishName: "Tin", mass: "118.71", category: "post-transition", electron: "[Kr] 4d¹⁰ 5s² 5p²", melt: "231.9°C", boil: "2602°C", discovery: "โบราณ", description: "ใช้ชุบกระป๋องป้องกันสนิม"},
+            {number: 51, symbol: "Sb", name: "พลวง", englishName: "Antimony", mass: "121.76", category: "metalloid", electron: "[Kr] 4d¹⁰ 5s² 5p³", melt: "630.6°C", boil: "1587°C", discovery: "โบราณ", description: "ใช้ในโลหะผสมและอิเล็กทรอนิกส์"},
+            {number: 52, symbol: "Te", name: "เทลลูเรียม", englishName: "Tellurium", mass: "127.60", category: "metalloid", electron: "[Kr] 4d¹⁰ 5s² 5p⁴", melt: "449.5°C", boil: "988°C", discovery: "1782", description: "กึ่งโลหะหายาก"},
+            {number: 53, symbol: "I", name: "ไอโอดีน", englishName: "Iodine", mass: "126.90", category: "halogen", electron: "[Kr] 4d¹⁰ 5s² 5p⁵", melt: "113.7°C", boil: "184.3°C", discovery: "1811", description: "จำเป็นต่อต่อมไทรอยด์"},
+            {number: 54, symbol: "Xe", name: "ซีนอน", englishName: "Xenon", mass: "131.29", category: "noble-gas", electron: "[Kr] 4d¹⁰ 5s² 5p⁶", melt: "-111.8°C", boil: "-108.1°C", discovery: "1898", description: "ใช้ในหลอดไฟรถยนต์"},
+            {number: 55, symbol: "Cs", name: "ซีเซียม", englishName: "Cesium", mass: "132.91", category: "alkali-metal", electron: "[Xe] 6s¹", melt: "28.4°C", boil: "671°C", discovery: "1860", description: "หลอมเหลวใกล้อุณหภูมิห้อง"},
+            {number: 56, symbol: "Ba", name: "แบเรียม", englishName: "Barium", mass: "137.33", category: "alkaline-earth", electron: "[Xe] 6s²", melt: "727°C", boil: "1870°C", discovery: "1808", description: "ใช้ในดอกไม้ไฟสีเขียว"},
+            {number: 57, symbol: "La", name: "แลนทานัม", englishName: "Lanthanum", mass: "138.91", category: "lanthanide", electron: "[Xe] 5d¹ 6s²", melt: "920°C", boil: "3464°C", discovery: "1839", description: "ธาตุแรกของกลุ่มแลนทาไนด์"},
+            {number: 58, symbol: "Ce", name: "ซีเรียม", englishName: "Cerium", mass: "140.12", category: "lanthanide", electron: "[Xe] 4f¹ 5d¹ 6s²", melt: "798°C", boil: "3443°C", discovery: "1803", description: "แลนทาไนด์ที่พบมากที่สุด"},
+            {number: 59, symbol: "Pr", name: "เพรซิโอดิเมียม", englishName: "Praseodymium", mass: "140.91", category: "lanthanide", electron: "[Xe] 4f³ 6s²", melt: "931°C", boil: "3520°C", discovery: "1885", description: "ใช้ในแม่เหล็กแรงสูง"},
+            {number: 60, symbol: "Nd", name: "นีโอดิเมียม", englishName: "Neodymium", mass: "144.24", category: "lanthanide", electron: "[Xe] 4f⁴ 6s²", melt: "1016°C", boil: "3074°C", discovery: "1885", description: "ใช้ในแม่เหล็กที่แข็งแรงที่สุด"},
+            {number: 61, symbol: "Pm", name: "โพรมีเทียม", englishName: "Promethium", mass: "145", category: "lanthanide", electron: "[Xe] 4f⁵ 6s²", melt: "1042°C", boil: "3000°C", discovery: "1945", description: "ธาตุกัมมันตรังสี"},
+            {number: 62, symbol: "Sm", name: "ซาแมเรียม", englishName: "Samarium", mass: "150.36", category: "lanthanide", electron: "[Xe] 4f⁶ 6s²", melt: "1072°C", boil: "1794°C", discovery: "1879", description: "ใช้ในแม่เหล็กและเลเซอร์"},
+            {number: 63, symbol: "Eu", name: "ยูโรเพียม", englishName: "Europium", mass: "151.96", category: "lanthanide", electron: "[Xe] 4f⁷ 6s²", melt: "822°C", boil: "1529°C", discovery: "1901", description: "ใช้ในธนบัตรป้องกันการปลอม"},
+            {number: 64, symbol: "Gd", name: "แกโดลิเนียม", englishName: "Gadolinium", mass: "157.25", category: "lanthanide", electron: "[Xe] 4f⁷ 5d¹ 6s²", melt: "1313°C", boil: "3273°C", discovery: "1880", description: "มีคุณสมบัติทางแม่เหล็กดี"},
+            {number: 65, symbol: "Tb", name: "เทอร์เบียม", englishName: "Terbium", mass: "158.93", category: "lanthanide", electron: "[Xe] 4f⁹ 6s²", melt: "1356°C", boil: "3230°C", discovery: "1843", description: "ใช้ในอุปกรณ์อิเล็กทรอนิกส์"},
+            {number: 66, symbol: "Dy", name: "ดิสโพรเซียม", englishName: "Dysprosium", mass: "162.50", category: "lanthanide", electron: "[Xe] 4f¹⁰ 6s²", melt: "1412°C", boil: "2567°C", discovery: "1886", description: "ใช้ในแม่เหล็กแรงสูง"},
+            {number: 67, symbol: "Ho", name: "โฮลเมียม", englishName: "Holmium", mass: "164.93", category: "lanthanide", electron: "[Xe] 4f¹¹ 6s²", melt: "1474°C", boil: "2700°C", discovery: "1878", description: "มีคุณสมบัติทางแม่เหล็กสูง"},
+            {number: 68, symbol: "Er", name: "เออร์เบียม", englishName: "Erbium", mass: "167.26", category: "lanthanide", electron: "[Xe] 4f¹² 6s²", melt: "1529°C", boil: "2868°C", discovery: "1843", description: "ใช้ในเลเซอร์และใยแก้วนำแสง"},
+            {number: 69, symbol: "Tm", name: "ทูเลียม", englishName: "Thulium", mass: "168.93", category: "lanthanide", electron: "[Xe] 4f¹³ 6s²", melt: "1545°C", boil: "1950°C", discovery: "1879", description: "แลนทาไนด์ที่หายากที่สุด"},
+            {number: 70, symbol: "Yb", name: "อิตเทอร์เบียม", englishName: "Ytterbium", mass: "173.05", category: "lanthanide", electron: "[Xe] 4f¹⁴ 6s²", melt: "824°C", boil: "1196°C", discovery: "1878", description: "ใช้ในนาฬิกาอะตอม"},
+            {number: 71, symbol: "Lu", name: "ลูทีเชียม", englishName: "Lutetium", mass: "174.97", category: "lanthanide", electron: "[Xe] 4f¹⁴ 5d¹ 6s²", melt: "1663°C", boil: "3402°C", discovery: "1907", description: "แลนทาไนด์ธาตุสุดท้าย"},
+            {number: 72, symbol: "Hf", name: "แฮฟเนียม", englishName: "Hafnium", mass: "178.49", category: "transition-metal", electron: "[Xe] 4f¹⁴ 5d² 6s²", melt: "2233°C", boil: "4603°C", discovery: "1923", description: "คล้ายเซอร์โคเนียมมาก"},
+            {number: 73, symbol: "Ta", name: "แทนทาลัม", englishName: "Tantalum", mass: "180.95", category: "transition-metal", electron: "[Xe] 4f¹⁴ 5d³ 6s²", melt: "3017°C", boil: "5458°C", discovery: "1802", description: "ทนต่อการกัดกร่อนสูงมาก"},
+            {number: 74, symbol: "W", name: "ทังสเตน", englishName: "Tungsten", mass: "183.84", category: "transition-metal", electron: "[Xe] 4f¹⁴ 5d⁴ 6s²", melt: "3422°C", boil: "5555°C", discovery: "1783", description: "จุดหลอมเหลวสูงที่สุด"},
+            {number: 75, symbol: "Re", name: "รีเนียม", englishName: "Rhenium", mass: "186.21", category: "transition-metal", electron: "[Xe] 4f¹⁴ 5d⁵ 6s²", melt: "3186°C", boil: "5596°C", discovery: "1925", description: "โลหะหายากมาก"},
+            {number: 76, symbol: "Os", name: "ออสเมียม", englishName: "Osmium", mass: "190.23", category: "transition-metal", electron: "[Xe] 4f¹⁴ 5d⁶ 6s²", melt: "3033°C", boil: "5012°C", discovery: "1803", description: "ธาตุที่มีความหนาแน่นสูงที่สุด"},
+            {number: 77, symbol: "Ir", name: "อิริเดียม", englishName: "Iridium", mass: "192.22", category: "transition-metal", electron: "[Xe] 4f¹⁴ 5d⁷ 6s²", melt: "2446°C", boil: "4428°C", discovery: "1803", description: "แข็งและทนทานมาก"},
+            {number: 78, symbol: "Pt", name: "แพลตินัม", englishName: "Platinum", mass: "195.08", category: "transition-metal", electron: "[Xe] 4f¹⁴ 5d⁹ 6s¹", melt: "1768.3°C", boil: "3825°C", discovery: "1735", description: "โลหะมีค่า ทนต่อการกัดกร่อน"},
+            {number: 79, symbol: "Au", name: "ทองคำ", englishName: "Gold", mass: "196.97", category: "transition-metal", electron: "[Xe] 4f¹⁴ 5d¹⁰ 6s¹", melt: "1064.2°C", boil: "2856°C", discovery: "โบราณ", description: "โลหะมีค่าที่มนุษย์ใช้มานาน"},
+            {number: 80, symbol: "Hg", name: "ปรอท", englishName: "Mercury", mass: "200.59", category: "transition-metal", electron: "[Xe] 4f¹⁴ 5d¹⁰ 6s²", melt: "-38.8°C", boil: "356.7°C", discovery: "โบราณ", description: "โลหะเหลวที่อุณหภูมิห้อง"},
+            {number: 81, symbol: "Tl", name: "แทลเลียม", englishName: "Thallium", mass: "204.38", category: "post-transition", electron: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p¹", melt: "304°C", boil: "1473°C", discovery: "1861", description: "โลหะพิษ"},
+            {number: 82, symbol: "Pb", name: "ตะกั่ว", englishName: "Lead", mass: "207.2", category: "post-transition", electron: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p²", melt: "327.5°C", boil: "1749°C", discovery: "โบราณ", description: "โลหะหนัก ป้องกันรังสี"},
+            {number: 83, symbol: "Bi", name: "บิสมัท", englishName: "Bismuth", mass: "208.98", category: "post-transition", electron: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p³", melt: "271.5°C", boil: "1564°C", discovery: "โบราณ", description: "โลหะที่มีพิษต่ำ"},
+            {number: 84, symbol: "Po", name: "โพโลเนียม", englishName: "Polonium", mass: "209", category: "post-transition", electron: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁴", melt: "254°C", boil: "962°C", discovery: "1898", description: "กัมมันตรังสีสูง"},
+            {number: 85, symbol: "At", name: "แอสทาทีน", englishName: "Astatine", mass: "210", category: "halogen", electron: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁵", melt: "302°C", boil: "337°C", discovery: "1940", description: "แฮโลเจนที่หายากมาก"},
+            {number: 86, symbol: "Rn", name: "เรดอน", englishName: "Radon", mass: "222", category: "noble-gas", electron: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁶", melt: "-71°C", boil: "-61.7°C", discovery: "1900", description: "แก๊สกัมมันตรังสี"},
+            {number: 87, symbol: "Fr", name: "แฟรนเซียม", englishName: "Francium", mass: "223", category: "alkali-metal", electron: "[Rn] 7s¹", melt: "27°C", boil: "677°C", discovery: "1939", description: "โลหะอัลคาไลที่หายากที่สุด"},
+            {number: 88, symbol: "Ra", name: "เรเดียม", englishName: "Radium", mass: "226", category: "alkaline-earth", electron: "[Rn] 7s²", melt: "700°C", boil: "1737°C", discovery: "1898", description: "กัมมันตรังสีสูง"},
+            {number: 89, symbol: "Ac", name: "แอกทิเนียม", englishName: "Actinium", mass: "227", category: "actinide", electron: "[Rn] 6d¹ 7s²", melt: "1050°C", boil: "3198°C", discovery: "1899", description: "ธาตุแรกของกลุ่มแอกทิไนด์"},
+            {number: 90, symbol: "Th", name: "ทอเรียม", englishName: "Thorium", mass: "232.04", category: "actinide", electron: "[Rn] 6d² 7s²", melt: "1750°C", boil: "4788°C", discovery: "1828", description: "เชื้อเพลิงนิวเคลียร์ที่มีศักยภาพ"},
+            {number: 91, symbol: "Pa", name: "โพรแทกทิเนียม", englishName: "Protactinium", mass: "231.04", category: "actinide", electron: "[Rn] 5f² 6d¹ 7s²", melt: "1572°C", boil: "4000°C", discovery: "1913", description: "กัมมันตรังสี"},
+            {number: 92, symbol: "U", name: "ยูเรเนียม", englishName: "Uranium", mass: "238.03", category: "actinide", electron: "[Rn] 5f³ 6d¹ 7s²", melt: "1135°C", boil: "4131°C", discovery: "1789", description: "เชื้อเพลิงนิวเคลียร์"},
+            {number: 93, symbol: "Np", name: "เนปทูเนียม", englishName: "Neptunium", mass: "237", category: "actinide", electron: "[Rn] 5f⁴ 6d¹ 7s²", melt: "644°C", boil: "3902°C", discovery: "1940", description: "ธาตุสังเคราะห์"},
+            {number: 94, symbol: "Pu", name: "พลูโทเนียม", englishName: "Plutonium", mass: "244", category: "actinide", electron: "[Rn] 5f⁶ 7s²", melt: "640°C", boil: "3228°C", discovery: "1940", description: "ใช้ในอาวุธนิวเคลียร์"},
+            {number: 95, symbol: "Am", name: "อเมริเซียม", englishName: "Americium", mass: "243", category: "actinide", electron: "[Rn] 5f⁷ 7s²", melt: "1176°C", boil: "2011°C", discovery: "1944", description: "ใช้ในเครื่องตรวจจับควัน"},
+            {number: 96, symbol: "Cm", name: "คูเรียม", englishName: "Curium", mass: "247", category: "actinide", electron: "[Rn] 5f⁷ 6d¹ 7s²", melt: "1345°C", boil: "3110°C", discovery: "1944", description: "กัมมันตรังสีสูง"},
+            {number: 97, symbol: "Bk", name: "เบอร์คีเลียม", englishName: "Berkelium", mass: "247", category: "actinide", electron: "[Rn] 5f⁹ 7s²", melt: "986°C", boil: "2627°C", discovery: "1949", description: "ธาตุสังเคราะห์"},
+            {number: 98, symbol: "Cf", name: "แคลิฟอร์เนียม", englishName: "Californium", mass: "251", category: "actinide", electron: "[Rn] 5f¹⁰ 7s²", melt: "900°C", boil: "1470°C", discovery: "1950", description: "แหล่งนิวตรอน"},
+            {number: 99, symbol: "Es", name: "ไอน์สไตเนียม", englishName: "Einsteinium", mass: "252", category: "actinide", electron: "[Rn] 5f¹¹ 7s²", melt: "860°C", boil: "996°C", discovery: "1952", description: "ธาตุสังเคราะห์"},
+            {number: 100, symbol: "Fm", name: "เฟอร์เมียม", englishName: "Fermium", mass: "257", category: "actinide", electron: "[Rn] 5f¹² 7s²", melt: "1527°C", boil: "-", discovery: "1952", description: "อายุสั้นมาก"},
+            {number: 101, symbol: "Md", name: "เมนเดลีเวียม", englishName: "Mendelevium", mass: "258", category: "actinide", electron: "[Rn] 5f¹³ 7s²", melt: "827°C", boil: "-", discovery: "1955", description: "สร้างในห้องปฏิบัติการ"},
+            {number: 102, symbol: "No", name: "โนเบเลียม", englishName: "Nobelium", mass: "259", category: "actinide", electron: "[Rn] 5f¹⁴ 7s²", melt: "827°C", boil: "-", discovery: "1958", description: "ธาตุสังเคราะห์"},
+            {number: 103, symbol: "Lr", name: "ลอว์เรนเซียม", englishName: "Lawrencium", mass: "266", category: "actinide", electron: "[Rn] 5f¹⁴ 7s² 7p¹", melt: "1627°C", boil: "-", discovery: "1961", description: "แอกทิไนด์ธาตุสุดท้าย"},
+            {number: 104, symbol: "Rf", name: "รัทเทอร์ฟอร์เดียม", englishName: "Rutherfordium", mass: "267", category: "transition-metal", electron: "[Rn] 5f¹⁴ 6d² 7s²", melt: "-", boil: "-", discovery: "1964", description: "ธาตุสังเคราะห์"},
+            {number: 105, symbol: "Db", name: "ดุบเนียม", englishName: "Dubnium", mass: "268", category: "transition-metal", electron: "[Rn] 5f¹⁴ 6d³ 7s²", melt: "-", boil: "-", discovery: "1967", description: "ธาตุสังเคราะห์"},
+            {number: 106, symbol: "Sg", name: "ซีบอร์เกียม", englishName: "Seaborgium", mass: "269", category: "transition-metal", electron: "[Rn] 5f¹⁴ 6d⁴ 7s²", melt: "-", boil: "-", discovery: "1974", description: "ธาตุสังเคราะห์"},
+            {number: 107, symbol: "Bh", name: "โบห์เรียม", englishName: "Bohrium", mass: "270", category: "transition-metal", electron: "[Rn] 5f¹⁴ 6d⁵ 7s²", melt: "-", boil: "-", discovery: "1981", description: "ธาตุสังเคราะห์"},
+            {number: 108, symbol: "Hs", name: "แฮสเซียม", englishName: "Hassium", mass: "277", category: "transition-metal", electron: "[Rn] 5f¹⁴ 6d⁶ 7s²", melt: "-", boil: "-", discovery: "1984", description: "ธาตุสังเคราะห์"},
+            {number: 109, symbol: "Mt", name: "ไมต์เนเรียม", englishName: "Meitnerium", mass: "278", category: "transition-metal", electron: "[Rn] 5f¹⁴ 6d⁷ 7s²", melt: "-", boil: "-", discovery: "1982", description: "ธาตุสังเคราะห์"},
+            {number: 110, symbol: "Ds", name: "ดาร์มสตัดเทียม", englishName: "Darmstadtium", mass: "281", category: "transition-metal", electron: "[Rn] 5f¹⁴ 6d⁹ 7s¹", melt: "-", boil: "-", discovery: "1994", description: "ธาตุสังเคราะห์"},
+            {number: 111, symbol: "Rg", name: "เรินต์เกเนียม", englishName: "Roentgenium", mass: "282", category: "transition-metal", electron: "[Rn] 5f¹⁴ 6d¹⁰ 7s¹", melt: "-", boil: "-", discovery: "1994", description: "ธาตุสังเคราะห์"},
+            {number: 112, symbol: "Cn", name: "โคเปอร์นิเซียม", englishName: "Copernicium", mass: "285", category: "transition-metal", electron: "[Rn] 5f¹⁴ 6d¹⁰ 7s²", melt: "-", boil: "-", discovery: "1996", description: "ธาตุสังเคราะห์"},
+            {number: 113, symbol: "Nh", name: "นิโฮเนียม", englishName: "Nihonium", mass: "286", category: "post-transition", electron: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p¹", melt: "-", boil: "-", discovery: "2004", description: "ธาตุสังเคราะห์"},
+            {number: 114, symbol: "Fl", name: "ฟลีโรเวียม", englishName: "Flerovium", mass: "289", category: "post-transition", electron: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p²", melt: "-", boil: "-", discovery: "1999", description: "ธาตุสังเคราะห์"},
+            {number: 115, symbol: "Mc", name: "มอสโคเวียม", englishName: "Moscovium", mass: "290", category: "post-transition", electron: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p³", melt: "-", boil: "-", discovery: "2003", description: "ธาตุสังเคราะห์"},
+            {number: 116, symbol: "Lv", name: "ลิเวอร์มอเรียม", englishName: "Livermorium", mass: "293", category: "post-transition", electron: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁴", melt: "-", boil: "-", discovery: "2000", description: "ธาตุสังเคราะห์"},
+            {number: 117, symbol: "Ts", name: "เทนเนสซีน", englishName: "Tennessine", mass: "294", category: "halogen", electron: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁵", melt: "-", boil: "-", discovery: "2010", description: "ธาตุสังเคราะห์"},
+            {number: 118, symbol: "Og", name: "ออกาเนสซอน", englishName: "Oganesson", mass: "294", category: "noble-gas", electron: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁶", melt: "-", boil: "-", discovery: "2002", description: "ธาตุสุดท้ายในตารางธาตุ"}
+        ];
+
+        // Periodic table layout - position for each element (row, column)
+        const layout = {
+            1: [1,1], 2: [1,18],
+            3: [2,1], 4: [2,2], 5: [2,13], 6: [2,14], 7: [2,15], 8: [2,16], 9: [2,17], 10: [2,18],
+            11: [3,1], 12: [3,2], 13: [3,13], 14: [3,14], 15: [3,15], 16: [3,16], 17: [3,17], 18: [3,18],
+            19: [4,1], 20: [4,2], 21: [4,3], 22: [4,4], 23: [4,5], 24: [4,6], 25: [4,7], 26: [4,8], 27: [4,9],
+            28: [4,10], 29: [4,11], 30: [4,12], 31: [4,13], 32: [4,14], 33: [4,15], 34: [4,16], 35: [4,17], 36: [4,18],
+            37: [5,1], 38: [5,2], 39: [5,3], 40: [5,4], 41: [5,5], 42: [5,6], 43: [5,7], 44: [5,8], 45: [5,9],
+            46: [5,10], 47: [5,11], 48: [5,12], 49: [5,13], 50: [5,14], 51: [5,15], 52: [5,16], 53: [5,17], 54: [5,18],
+            55: [6,1], 56: [6,2], 57: [8,3], 72: [6,4], 73: [6,5], 74: [6,6], 75: [6,7], 76: [6,8], 77: [6,9],
+            78: [6,10], 79: [6,11], 80: [6,12], 81: [6,13], 82: [6,14], 83: [6,15], 84: [6,16], 85: [6,17], 86: [6,18],
+            87: [7,1], 88: [7,2], 89: [9,3], 104: [7,4], 105: [7,5], 106: [7,6], 107: [7,7], 108: [7,8], 109: [7,9],
+            110: [7,10], 111: [7,11], 112: [7,12], 113: [7,13], 114: [7,14], 115: [7,15], 116: [7,16], 117: [7,17], 118: [7,18],
+            58: [8,4], 59: [8,5], 60: [8,6], 61: [8,7], 62: [8,8], 63: [8,9], 64: [8,10], 65: [8,11],
+            66: [8,12], 67: [8,13], 68: [8,14], 69: [8,15], 70: [8,16], 71: [8,17],
+            90: [9,4], 91: [9,5], 92: [9,6], 93: [9,7], 94: [9,8], 95: [9,9], 96: [9,10], 97: [9,11],
+            98: [9,12], 99: [9,13], 100: [9,14], 101: [9,15], 102: [9,16], 103: [9,17]
+        };
+
+        const table = document.getElementById('periodicTable');
+        const modal = document.getElementById('modal');
+        const closeBtn = document.getElementsByClassName('close')[0];
+
+        // Create grid with proper positioning
+        const maxRow = 9;
+        const maxCol = 18;
+        
+        // Initialize grid
+        for (let i = 0; i < maxRow * maxCol; i++) {
+            const div = document.createElement('div');
+            div.className = 'element empty';
+            table.appendChild(div);
+        }
+
+        // Place elements
+        elements.forEach(element => {
+            const [row, col] = layout[element.number];
+            const index = (row - 1) * maxCol + (col - 1);
+            const cell = table.children[index];
+            
+            cell.className = `element ${element.category}`;
+            cell.innerHTML = `
+                <div class="atomic-number">${element.number}</div>
+                <div class="symbol">${element.symbol}</div>
+                <div class="name">${element.name}</div>
+                <div class="mass">${element.mass}</div>
+            `;
+            
+            cell.onclick = () => showModal(element);
+        });
+
+        function showModal(element) {
+            document.getElementById('modalSymbol').textContent = element.symbol;
+            document.getElementById('modalName').textContent = element.name;
+            document.getElementById('modalEnglishName').textContent = element.englishName;
+            
+            const categoryNames = {
+                'alkali-metal': 'โลหะอัลคาไล',
+                'alkaline-earth': 'โลหะอัลคาไลน์เอิร์ธ',
+                'transition-metal': 'โลหะทรานซิชัน',
+                'post-transition': 'โลหะหลังทรานซิชัน',
+                'metalloid': 'metalloid',
+                'nonmetal': 'อโลหะ',
+                'halogen': 'แฮโลเจน',
+                'noble-gas': 'แก๊สเฉื่อย',
+                'lanthanide': 'แลนทาไนด์',
+                'actinide': 'แอกทิไนด์'
+            };
+
+            document.getElementById('modalBody').innerHTML = `
+                <div class="info-row">
+                    <div class="info-label">เลขอะตอม:</div>
+                    <div class="info-value">${element.number}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">มวลอะตอม:</div>
+                    <div class="info-value">${element.mass} u</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">ประเภท:</div>
+                    <div class="info-value">${categoryNames[element.category]}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">การจัดเรียงอิเล็กตรอน:</div>
+                    <div class="info-value">${element.electron}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">จุดหลอมเหลว:</div>
+                    <div class="info-value">${element.melt}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">จุดเดือด:</div>
+                    <div class="info-value">${element.boil}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">ค้นพบเมื่อ:</div>
+                    <div class="info-value">${element.discovery}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">คุณสมบัติ:</div>
+                    <div class="info-value">${element.description}</div>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+            document.getElementById('modalSymbol').style.color = getComputedStyle(document.querySelector(`.${element.category}`)).backgroundColor;
+        }
+
+        closeBtn.onclick = () => modal.style.display = 'none';
+        window.onclick = (event) => {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        };
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                modal.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
